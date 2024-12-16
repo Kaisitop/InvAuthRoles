@@ -1,0 +1,1 @@
+export const validarPrec = (valor) => valor <= 10000;
