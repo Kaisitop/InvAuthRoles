@@ -1,27 +1,24 @@
 import mongoose from "mongoose";
 import { esValido } from "../utils/validar.js";
+import Usuario from "./Usuarios.js";
 
-const userSchema = new mongoose.Schema(
+const clienteSchema = new mongoose.Schema(
   {
     nombres: { type: String, required: true },
     email: { type: String, unique: true },
     identificacion: {
       type: String,
-      required: true,
       unique: true,
-      validate: {
-        validator: esValido,
-        message: "La cédula debe contener exactamente 10 dígitos",
-      },
     },
     celular: {
       type: String,
       required: true,
       unique: true,
-      validate: {
-        validator: esValido,
-        message: "El número de celular debe contener exactamente 10 dígitos",
-      },
+    },
+    user:{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Usuario",
+      required: true
     },
     activo:{
       type: Boolean,
@@ -31,5 +28,5 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const User = mongoose.model("User", userSchema);
-export default User;
+const Cliente = mongoose.model("Cliente", clienteSchema);
+export default Cliente;

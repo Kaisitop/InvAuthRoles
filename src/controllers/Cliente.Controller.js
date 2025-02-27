@@ -1,8 +1,8 @@
-import User from "../models/Cliente.js";
+import Cliente from "../models/Cliente.js";
 
-export const getUsers = async (req, res) => {
+export const getClientes = async (req, res) => {
   try {
-    const users = await User.find();
+    const users = await Cliente.find({ user: req.user.id, activo: true }).populate("user", "username");
     res.status(200).json(users);
   } catch (err) {
     res
@@ -11,29 +11,45 @@ export const getUsers = async (req, res) => {
   }
 };
 
-export const createUser = async (req, res) => {
+export const createCliente = async (req, res) => {
   const { nombres, email, identificacion, celular } = req.body;
 
   //vaidar los datos recibidos
-  if (!nombres || !email || !identificacion || !celular) {
+  if (!nombres || !email || !identificacion || !celular) {  
     return res
       .status(400)
       .json({ message: "Nombre y correo son obligatorios" });
   }
 
   try {
-    const usuarioExistente = await User.findOne({ identificacion });
+    const usuarioExistente = await Cliente.findOne({ identificacion });
     if (usuarioExistente) {
-      return res.status(400).json({ message: "El usuario ya existe" });
+      if(usuarioExistente.activo){
+        return res.status(400).json({ message: "El usuario ya existe" });
+      }else{
+        //reactivar usuario
+        usuarioExistente.nombres = nombres;
+        usuarioExistente.email = email;
+        usuarioExistente.celular = celular;
+        usuarioExistente.user = req.user.id;
+        usuarioExistente.activo = true;
+        await usuarioExistente.save();
+
+        return res.status(200).json({
+          message: "usuario reactivado correctamente",
+          user: usuarioExistente,
+        })
+      }
+     
     }
 
     //CREAR USUARIO
-    const newUser = await User.create({ nombres, email, identificacion, celular });
+    const newCliente = await Cliente.create({ nombres, email, identificacion, celular, user: req.user.id, activo: true });
 
     //RESPONDER CON EL USUARIO CREADO
     res.status(201).json({
       message: "Usuario creado exitosamente",
-      user: newUser,
+      user: newCliente,
     });
   } catch (err) {
     res.status(500).json({
@@ -43,17 +59,17 @@ export const createUser = async (req, res) => {
   }
 };
 
-export const buscarUser = async (req, res) => {
+export const buscarCliente = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const usuarioId = await User.findById(id);
+    const usuarioId = await Cliente.findById(id);
     if (!usuarioId) {
       return res
         .status(404)
         .json({ message: `El usuario con Id: ${id} no existe` });
     }
-    res.status(200).json(usuarioId);
+    res.status(200).json(usuarioId.activo ? usuarioId : { message: "usuario inactivo" });
   } catch (err) {
     res.status(500).json({
       message: "error al buscar al usuario",
@@ -62,55 +78,61 @@ export const buscarUser = async (req, res) => {
   }
 };
 
-export const actualizarUser = async (req, res) => {
+export const actualizarCliente = async (req, res) => {
   const { id } = req.params;
   const { nombres, email, identificacion, celular } = req.body;
 
-  if (!nombres && !email && !identificacion && celular) {
+  if (!nombres && !email && !identificacion && !celular) {
     return res.status(400).json({
-      message: `se debe proporcionar al menos un campo para actualizar`,
+      message: "Se debe proporcionar al menos un campo para actualizar",
     });
   }
 
   try {
-    //buscar el usuario por id
-    const user = await User.findById(id);
+    // Buscar el usuario por id
+    const user = await Cliente.findById(id);
 
-    //si no existe madar error
-    if (!user) {
-      return res.status(404).json({ message: "usuario no encontrado" });
+    // Si no existe o está inactivo, mandar error
+    if (!user || !user.activo) {
+      return res.status(404).json({ message: "Usuario no encontrado o inactivo" });
     }
 
-    //actualizar los campos
+    // Actualizar los campos
     if (nombres) user.nombres = nombres;
     if (email) user.email = email;
     if (identificacion) user.identificacion = identificacion;
     if (celular) user.celular = celular;
-    //guardamos los datos actualizados
+
+    // Guardar los datos actualizados
     await user.save();
 
-    //usuario encontrado
+    // Usuario encontrado y actualizado
     res.status(200).json({
-      message: "usuario actualizado correctamente",
+      message: "Usuario actualizado correctamente",
       user,
     });
   } catch (err) {
     res.status(500).json({
-      message: "error al actualizar el usuario",
+      message: "Error al actualizar el usuario",
       error: err.message,
     });
   }
 };
 
-export const eliminarUser = async (req, res) => {
+export const eliminarCliente = async (req, res) => {
   const { id } = req.params;
   try {
-    const user = await User.findByIdAndDelete(id);
-    if (!user) {
+    const user = await Cliente.findById(id);
+    if (!user || !user.activo) {
       return res.status(404).json({
         message: "usuario no encontrado",
       });
     }
+
+    //desactivamos el usuario
+    user.activo = false;
+    await user.save();
+
     //responder con exito
     res.status(200).json({
       message: "usuario eliminado exitosamente",
@@ -126,13 +148,15 @@ export const eliminarUser = async (req, res) => {
 
 export const eliminarList = async (req, res) => {
   try {
-    const lista = await User.deleteMany();
-    if (!lista) {
+    const result = await Cliente.updateMany({activo: true}, {$set: {activo: false}});
+    if (result.nModified === 0) {
       return res.status(404).json({ message: "no hay usuarios para eliminar" });
     }
+
     //responder con exito
     res.status(200).json({
       message: "Los Usuarios han sido eliminados",
+      modifiedCount: result.nModified,
     });
   } catch (err) {
     res.status(500).json({

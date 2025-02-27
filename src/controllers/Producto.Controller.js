@@ -2,7 +2,7 @@ import Product from "../models/producto.js";
 
 export const GetProductos = async (req, res) => {
   try {
-    const produc = await Product.find();
+    const produc = await Product.find({activo: true});
     res.status(200).json(produc);
   } catch (err) {
     res.status(500).json({
@@ -23,9 +23,24 @@ export const crearProducto = async (req, res) => {
   try {
     const productoExistente = await Product.findOne({ producto });
     if (productoExistente) {
-      return res.status(400).json({
-        message: "el producto ya existe",
-      });
+      if(productoExistente.activo){
+        return res.status(400).json({
+          message: "el producto ya existe",
+        });
+      }else{
+        //reactivar producto
+        productoExistente.descripcion = descripcion;
+        productoExistente.precio = precio;
+        productoExistente.stock = stock;
+        productoExistente.activo = true;
+        await productoExistente.save();
+
+        return res.status(200).json({
+          message: "producto reactivado correctamente",
+          producto: productoExistente,
+        });
+      }
+      
     }
 
     const newProducto = await Product.create({
@@ -57,7 +72,7 @@ export const buscarProd = async (req, res) => {
       });
     }
     //responder exitosamente
-    res.status(200).json({
+    res.status(200).json(productoID.activo ? productoID:{
       message: "producto encontrado",
       productoID,
     });
@@ -82,7 +97,7 @@ export const actualizarProd = async (req, res) => {
   try {
     const product = await Product.findById(id);
 
-    if (!product) {
+    if (!product || !product.activo) {
       return res.status(404).json({
         message: "El producto no fue encontrado",
       });
@@ -112,14 +127,17 @@ export const eliminarProd = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const prod = await Product.findByIdAndDelete(id);
-    if (!prod) {
+    const prod = await Product.findById(id);
+    if (!prod || !prod.activo) {
       return res.status(400).json({
         message: "producto no encontrado",
       });
     }
 
     //responder con exito
+    prod.activo = false;
+    await prod.save();
+ 
     res.status(200).json({
       message: "producto eliminado correctamente",
     });
@@ -133,8 +151,8 @@ export const eliminarProd = async (req, res) => {
 
 export const eliminarListaProd = async (req, res) => {
   try {
-    const listaProd = await Product.deleteMany();
-    if (!listaProd) {
+    const listaProd = await Product.updateMany({activo: true},{$set: {activo: false}}); 
+    if (listaProd.nModified === 0) {
       return (
         res.status(400),
         json({
@@ -145,7 +163,8 @@ export const eliminarListaProd = async (req, res) => {
 
     //RESPOnder con exito
     res.status(200).json({
-        message:'La lista de productos se ha eliminado'
+        message:'La lista de productos se ha eliminado',
+        modifiedCount: listaProd.nModified,
     })
   } catch (err) {
     res.status(500).json({
