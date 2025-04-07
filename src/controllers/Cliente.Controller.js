@@ -15,7 +15,7 @@ export const createCliente = async (req, res) => {
   const { nombres, email, identificacion, celular } = req.body;
 
   //vaidar los datos recibidos
-  if (!nombres || !email || !identificacion || !celular) {  
+  if (!nombres || !email || !identificacion || !celular) {
     return res
       .status(400)
       .json({ message: "Nombre y correo son obligatorios" });
@@ -24,9 +24,9 @@ export const createCliente = async (req, res) => {
   try {
     const usuarioExistente = await Cliente.findOne({ identificacion });
     if (usuarioExistente) {
-      if(usuarioExistente.activo){
+      if (usuarioExistente.activo) {
         return res.status(400).json({ message: "El usuario ya existe" });
-      }else{
+      } else {
         //reactivar usuario
         usuarioExistente.nombres = nombres;
         usuarioExistente.email = email;
@@ -40,7 +40,7 @@ export const createCliente = async (req, res) => {
           user: usuarioExistente,
         })
       }
-     
+
     }
 
     //CREAR USUARIO
@@ -148,7 +148,7 @@ export const eliminarCliente = async (req, res) => {
 
 export const eliminarList = async (req, res) => {
   try {
-    const result = await Cliente.updateMany({activo: true}, {$set: {activo: false}});
+    const result = await Cliente.updateMany({ activo: true }, { $set: { activo: false } });
     if (result.nModified === 0) {
       return res.status(404).json({ message: "no hay usuarios para eliminar" });
     }

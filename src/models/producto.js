@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { validarPrec } from "../utils/validarPrecio.js";
+import Usuario from "./Usuarios.js";
 
 const productoSchema = new mongoose.Schema(
     {
@@ -9,15 +9,17 @@ const productoSchema = new mongoose.Schema(
             type: Number,
             required: true,
             min: 0,
-            validate: {
-                validator: validarPrec,
-                message: 'El precio no puede exceder los 10.000'
-            }
+        
         },
         stock: {
             type: Number,
             required: true,
             min: 0
+        },
+        user: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Usuario",
+            required: true
         },
         activo: {
             type: Boolean,

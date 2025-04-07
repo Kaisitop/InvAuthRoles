@@ -2,12 +2,12 @@ import Product from "../models/producto.js";
 
 export const GetProductos = async (req, res) => {
   try {
-    const produc = await Product.find({activo: true});
+    const produc = await Product.find({ user: req.user.id, activo: true }).populate("user", 'username');
     res.status(200).json(produc);
   } catch (err) {
     res.status(500).json({
       Message: "no se encontraron productos",
-      error: err.Message,
+      error: err.message,
     });
   }
 };
@@ -23,15 +23,16 @@ export const crearProducto = async (req, res) => {
   try {
     const productoExistente = await Product.findOne({ producto });
     if (productoExistente) {
-      if(productoExistente.activo){
+      if (productoExistente.activo) {
         return res.status(400).json({
           message: "el producto ya existe",
         });
-      }else{
+      } else {
         //reactivar producto
         productoExistente.descripcion = descripcion;
         productoExistente.precio = precio;
         productoExistente.stock = stock;
+        productoExistente.user = req.user.id;
         productoExistente.activo = true;
         await productoExistente.save();
 
@@ -40,7 +41,7 @@ export const crearProducto = async (req, res) => {
           producto: productoExistente,
         });
       }
-      
+
     }
 
     const newProducto = await Product.create({
@@ -48,6 +49,7 @@ export const crearProducto = async (req, res) => {
       descripcion,
       precio,
       stock,
+      user: req.user.id,
     });
     res.status(201).json({
       message: "el producto fue creado exitosamente",
@@ -72,7 +74,7 @@ export const buscarProd = async (req, res) => {
       });
     }
     //responder exitosamente
-    res.status(200).json(productoID.activo ? productoID:{
+    res.status(200).json(productoID.activo ? productoID : {
       message: "producto encontrado",
       productoID,
     });
@@ -137,7 +139,7 @@ export const eliminarProd = async (req, res) => {
     //responder con exito
     prod.activo = false;
     await prod.save();
- 
+
     res.status(200).json({
       message: "producto eliminado correctamente",
     });
@@ -151,7 +153,7 @@ export const eliminarProd = async (req, res) => {
 
 export const eliminarListaProd = async (req, res) => {
   try {
-    const listaProd = await Product.updateMany({activo: true},{$set: {activo: false}}); 
+    const listaProd = await Product.updateMany({ activo: true }, { $set: { activo: false } });
     if (listaProd.nModified === 0) {
       return (
         res.status(400),
@@ -163,13 +165,13 @@ export const eliminarListaProd = async (req, res) => {
 
     //RESPOnder con exito
     res.status(200).json({
-        message:'La lista de productos se ha eliminado',
-        modifiedCount: listaProd.nModified,
+      message: 'La lista de productos se ha eliminado',
+      modifiedCount: listaProd.nModified,
     })
   } catch (err) {
     res.status(500).json({
-        message:'error al eliminar la lista',
-        error:err.message
+      message: 'error al eliminar la lista',
+      error: err.message
     })
   }
 };

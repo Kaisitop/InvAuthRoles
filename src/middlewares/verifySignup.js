@@ -4,10 +4,10 @@ import Usuario from "../models/Usuarios.js"
 
 export const checkDuplicateUsernameOrEmail = async (req, res, next) => {
     const user = await Usuario.findOne({ username: req.body.username })
-    if (user) return res.status(400).json({ message: "este username ya existe" })
+    if (user) return res.status(400).json(["este username ya existe"])
 
     const email = await Usuario.findOne({ email: req.body.email })
-    if (email) return res.status(400).json({ message: "este email ya existe" })
+    if (email) return res.status(400).json(["este email ya existe"])
     next()
 }
 

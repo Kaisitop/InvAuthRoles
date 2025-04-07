@@ -5,6 +5,6 @@ export const validateSchema = (schema) => (req, res, next) =>{
         next()
     } catch (error) {
         console.log(error.errors.map(err => err.message))
-        return res.status(400).json({error: error.errors.map(err => err.message)})
+        return res.status(400).json( error.errors.map(err => err.message))
     }
 }

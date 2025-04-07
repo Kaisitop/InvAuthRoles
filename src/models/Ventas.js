@@ -26,6 +26,11 @@ const ventaSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
+    user:{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Usuario',
+      required: true
+    },
     activo: {
       type: Boolean,
       default: true,

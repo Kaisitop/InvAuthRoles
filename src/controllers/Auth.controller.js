@@ -7,6 +7,9 @@ export const register = async (req, res) => {
     try {
         const { username, email, password, roles } = req.body;
 
+        const userFound = await Usuario.findOne({email})
+        if(userFound)
+            return res.status(400).json(['El email ya esta en uso'])
         const passwordHash = await bcrypt.hash(password, 10)
 
         const newUser = new Usuario({
@@ -51,7 +54,7 @@ export const login = async (req, res) => {
         const userFound = await Usuario.findOne({ email })
         if (!userFound) return res.status(400).json({ message: "Usuario no encontrado" })
 
-        const isMatch = bcrypt.compare(password, userFound.password)
+        const isMatch = await bcrypt.compare(password, userFound.password)
         if(!isMatch) return res.status(400).json({ message: "Contraseña incorrecta" })
 
         const nameRoles = await Usuario.findById(userFound._id).populate("roles", "name")

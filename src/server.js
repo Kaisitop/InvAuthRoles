@@ -11,11 +11,15 @@ import rutasUsuarios from './routes/Usuarios.routes.js'
 import { createRoles } from './libs/initialSetup.js'
 import cookieParser from 'cookie-parser'
 
+
 dotenv.config();
 
 const app = express()
 createRoles()
 
+app.use(cors({
+    origin: 'http://localhost:5173'
+}));
 app.use(morgan('dev'))
 app.get('/', (req, res)=> res.send('hola'))
 app.use(cors())
@@ -31,6 +35,7 @@ app.use('/api/usuarios',rutasUsuarios)
 
 connectDB()
 
-const PORT = process.env.PORT || 5000
+const PORT = process.env.PORT || 5100
 
 app.listen(PORT, () => console.log(`Servidor corriendo en http://localhost:${PORT}`))
+  

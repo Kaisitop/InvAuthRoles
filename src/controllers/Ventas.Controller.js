@@ -4,7 +4,7 @@ import Product from "../models/producto.js";
 
 export const obtenerVentas = async (req, res) => {
   try {
-    const ventas = await Venta.find({activo: true})
+    const ventas = await Venta.find({user: req.user.id, activo: true}).populate("user", "username")
       .populate("cliente", "nombres identificacion")
       .populate("productos.producto", "producto precio");
 
@@ -88,6 +88,7 @@ export const crearVenta = async (req, res) => {
       cliente: clienteExistente._id ,
       productos,
       total: totalRedondeado,
+      user: req.user.id,
       activo: true
     });
     res.status(201).json({
